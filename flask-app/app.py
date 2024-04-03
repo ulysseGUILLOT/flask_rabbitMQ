@@ -34,4 +34,4 @@ def send_message():
         return jsonify({'status': 'error', 'message': 'Le champ "message" est requis'}), 400
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run()
