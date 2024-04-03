@@ -4,6 +4,10 @@ from rabbitmq_model import RabbitMQModel
 from threading import Thread
 import eventlet
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
 eventlet.monkey_patch()
 
 app = Flask(__name__)

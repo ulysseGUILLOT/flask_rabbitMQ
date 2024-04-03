@@ -1,4 +1,5 @@
 import pika
+import logging
 
 
 class RabbitMQModel:
@@ -23,6 +24,7 @@ class RabbitMQModel:
         connection.close()
 
     def receive_messages(self):
+        logging.info("Attempting to receive messages...")
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
                 host=self.host,
@@ -37,6 +39,9 @@ class RabbitMQModel:
         )
         connection.close()
         if method_frame:
-            return body.decode("utf-8")
+            message = body.decode("utf-8")
+            logging.info(f"Received message: {message}")
+            return message
         else:
+            logging.info("No message received.")
             return None
