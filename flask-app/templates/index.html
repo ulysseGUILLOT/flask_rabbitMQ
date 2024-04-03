@@ -2,6 +2,11 @@
 <html>
   <head>
     <title>Messagerie Flask & RabbitMQ</title>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
+      integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
+      crossorigin="anonymous"
+    ></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
@@ -17,47 +22,23 @@
 
     <script>
       $(document).ready(function () {
-        function fetchMessage() {
-          $.ajax({
-            url: "/fetch_message",
-            method: "GET",
-            success: function (response) {
-              if (response.message != "Aucun message disponible") {
-                $("#message-container").append(
-                  "<p>" + response.message + "</p>"
-                );
-              }
-              fetchMessage();
-            },
-            error: function (error) {
-              console.error(
-                "Erreur lors de la récupération du message:",
-                error
-              );
-            },
-          });
-        }
+        var socket = io();
+
+        socket.on("connect", function () {
+          console.log("Connected to WebSocket");
+        });
+
+        socket.on("new_message", function (msg) {
+          console.log(msg);
+          $("#message-container").append("<p>" + msg.message + "</p>");
+        });
 
         $("#message-form").submit(function (event) {
           event.preventDefault();
           var message = $("#message").val();
-          $.ajax({
-            url: "/send_message",
-            method: "POST",
-            contentType: "application/json",
-            data: JSON.stringify({ message: message }),
-            success: function (response) {
-              console.log("Message envoyé avec succès:", response);
-              $("#message").val(""); // Effacer le champ de saisie après l'envoi du message
-              fetchMessage();
-            },
-            error: function (error) {
-              console.error("Erreur lors de l'envoi du message:", error);
-            },
-          });
+          socket.emit("send_message", { message: message });
+          $("#message").val(""); // Clear the input field after sending
         });
-
-        fetchMessage(); // Démarrer la récupération des messages dès que la page est chargée
       });
     </script>
   </body>

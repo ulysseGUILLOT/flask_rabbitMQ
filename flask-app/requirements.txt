@@ -1,3 +1,5 @@
 flask
 pika
 gunicorn
+flask-socketio
+eventlet

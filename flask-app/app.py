@@ -1,7 +1,13 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template
+from flask_socketio import SocketIO
 from rabbitmq_model import RabbitMQModel
+from threading import Thread
+import eventlet
+
+eventlet.monkey_patch()
 
 app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
 RABBITMQ_HOST = "rabbitmq"
 RABBITMQ_PORT = 5672
@@ -19,28 +25,35 @@ def index():
     return render_template("index.html")
 
 
-@app.route("/fetch_message", methods=["GET"])
-def fetch_message():
-    message = rabbitmq_model.receive_messages()
-    if message:
-        return jsonify({"message": message})
-    else:
-        return jsonify({"message": "Aucun message disponible"})
+@socketio.on("connect")
+def handle_connect():
+    print("Client connected")
 
 
-@app.route("/send_message", methods=["POST"])
-def send_message():
-    data = request.json
-    message = data.get("message")
+@socketio.on("disconnect")
+def handle_disconnect():
+    print("Client disconnected")
+
+
+@socketio.on("send_message")
+def handle_send_message(json):
+    message = json.get("message")
     if message:
         rabbitmq_model.send_message(message)
-        return jsonify({"status": "success", "message": "Message envoyé avec succès"})
-    else:
-        return (
-            jsonify({"status": "error", "message": 'Le champ "message" est requis'}),
-            400,
+        socketio.emit(
+            "message_response",
+            {"status": "success", "message": "Message sent successfully"},
         )
 
 
+def listen_for_rabbitmq_messages():
+    while True:
+        message = eventlet.tpool.execute(rabbitmq_model.receive_messages)
+        if message:
+            socketio.emit("new_message", {"message": message})
+        eventlet.sleep(1)
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    eventlet.spawn(listen_for_rabbitmq_messages)
+    socketio.run(app, debug=True, async_mode="eventlet")
