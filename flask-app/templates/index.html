@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Messagerie Flask & RabbitMQ</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Messagerie Flask & RabbitMQ</h1>
+    <div id="message-container"></div>
+
+    <form id="message-form">
+        <label for="message">Message:</label>
+        <input type="text" id="message" name="message">
+        <button type="submit">Envoyer</button>
+    </form>
+
+    <script>
+        $(document).ready(function() {
+            function fetchMessage() {
+                $.ajax({
+                    url: '/fetch_message',
+                    method: 'GET',
+                    success: function(response) {
+                        if (response.message != 'Aucun message disponible') {
+                            $('#message-container').append('<p>' + response.message + '</p>');
+                        }
+                        fetchMessage();
+                    },
+                    error: function(error) {
+                        console.error('Erreur lors de la récupération du message:', error);
+                    }
+                });
+            }
+
+            $('#message-form').submit(function(event) {
+                event.preventDefault();
+                var message = $('#message').val();
+                $.ajax({
+                    url: '/send_message',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ message: message }),
+                    success: function(response) {
+                        console.log('Message envoyé avec succès:', response);
+                        $('#message').val(''); // Effacer le champ de saisie après l'envoi du message
+                        fetchMessage();
+                    },
+                    error: function(error) {
+                        console.error('Erreur lors de l\'envoi du message:', error);
+                    }
+                });
+            });
+
+            fetchMessage(); // Démarrer la récupération des messages dès que la page est chargée
+        });
+    </script>
+</body>
+</html>
